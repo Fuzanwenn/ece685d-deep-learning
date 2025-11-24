@@ -1,0 +1,12 @@
+# Core
+torch
+torchvision
+numpy
+
+# Training / plots / notebook
+matplotlib
+jupyterlab
+ipykernel
+
+# Optional (handy but not required)
+tqdm

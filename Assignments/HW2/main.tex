@@ -1,0 +1,102 @@
+\documentclass[11pt]{article}
+
+% --- Preamble (tweak here if you need exact spacing/margins) ---
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\setlist[itemize]{leftmargin=1.5em}
+\setlist[enumerate]{leftmargin=1.5em}
+
+\title{\textbf{ECE 685D HW2}}
+\date{}   % no date
+\author{} % no author
+
+\begin{document}
+\maketitle
+
+\section*{Submission Instructions}
+\begin{enumerate}
+  \item Upload your Jupyter Notebook (\texttt{.ipynb} file).
+  \item Export all outputs and necessary derivations as one or multiple PDF files and upload them.
+\end{enumerate}
+
+\section*{Mathematical Derivations}
+\begin{enumerate}
+  \item You can submit handwritten derivations, but \LaTeX{} is strongly encouraged.
+  \item Illegible handwriting will result in a 10\% point deduction, and you will need to resubmit the work in \LaTeX{} or Unicode within 2 days.
+\end{enumerate}
+
+\paragraph{LLM policy.} The use of large language models (LLMs) is permitted for this assignment; if you use them, you \textbf{MUST} disclose how.
+
+
+
+\section{Problem 1: Backprop on a Residual MLP (30 pts)}
+We define $f$ as a $k$-layer fully connected neural network (MLP) with \emph{identity skip connections} at every hidden layer. Let $x \in \mathbb{R}^{m\times 1}$ and set $h_0 := x$. For $\ell=1,\dots,k-1$:
+\begin{align}
+a_\ell &= W_\ell^\top h_{\ell-1} + b_\ell, \tag{1}\\
+h_\ell &= g(a_\ell) \;+\; h_{\ell-1}, \tag{2}
+\end{align}
+where $g$ is an element-wise 1-Lipschitz activation with derivative $g'(\cdot)$. The output layer remains linear:
+\begin{align}
+\hat{y} \;=\; W_k^\top h_{k-1} + b_k. \tag{3}
+\end{align}
+Let $k=3$ and use the mean-squared error (MSE) loss
+\[
+L(Y,\hat{Y}) \;=\; \frac{1}{N}\sum_{i=1}^{N} (y_i - \hat{y}_i)^2.
+\]
+
+\paragraph{Tasks.}
+\begin{enumerate}[label=(\alph*)]
+  \item Derive $\displaystyle \frac{\partial L}{\partial W_3}$ and $\displaystyle \frac{\partial L}{\partial b_3}$.
+  \item Define $e_\ell := \frac{\partial L}{\partial h_\ell}$ and $\delta_\ell := \frac{\partial L}{\partial a_\ell} = e_\ell \odot g'(a_\ell)$ for $\ell=1,2$. Show the \emph{residual recursion}
+  \[
+  e_{\ell-1} \;=\; e_\ell \;+\; W_\ell\,\delta_\ell \quad\text{for } \ell=1,2.
+  \]
+  (Hint: the skip adds an identity path $h_\ell \to h_{\ell-1}$ with derivative $I$.)
+  \item Using (b), give expressions for $\displaystyle \frac{\partial L}{\partial W_2}$, $\displaystyle \frac{\partial L}{\partial b_2}$, $\displaystyle \frac{\partial L}{\partial W_1}$, and $\displaystyle \frac{\partial L}{\partial b_1}$. (The final result should not involve $e_\ell$ and $\delta_\ell$)
+\end{enumerate}
+
+
+
+
+\section{Problem 2: Customized \emph{Multi-View} Dataset (30 pts)}
+
+In this problem, you will build a custom dataset \texttt{MNISTTwoView} by inheriting \texttt{torch.utils.data.Dataset}. For each sample, return \emph{two independently augmented views} of the same image:
+\[
+(x^{(1)},\, x^{(2)},\, y).
+\]
+Both \(x^{(1)}\) and \(x^{(2)}\) are produced by applying the \emph{same transform pipeline}  with independent randomness (e.g., small random crop/resize, random affine, random erasing). Use any standard library (e.g., \texttt{torchvision} or \texttt{albumentations}). You can either download the MNIST dataset from Kaggle \url{https://www.kaggle.com/datasets/oddrationale/mnist-in-csv} or directly through torchvision. (Remark: such two view setting is commonly used in self-supervised learning)
+
+\textbf{Requirements.}
+\begin{enumerate}[label=(\alph*)]
+  \item Your dataset must be compatible with \texttt{torch.utils.data.DataLoader}.
+  \item Visualize one minibatch of size 8 as a grid with three columns per example: \emph{original}, \(x^{(1)}\), \(x^{(2)}\). Show labels under each original image.
+\end{enumerate}
+
+
+\section{Problem 3: Logistic Regression using Gradient and Newton's Methods (30 pts)}
+In this problem, we are going to fit a Logistic Regression model on the Breast Cancer dataset:
+\url{https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_breast_cancer.html}
+using gradient descent and Newton's methods. Since it's a binary classification problem, we will use the \texttt{BCELoss} from PyTorch. Specifically,
+\begin{align}
+L(D; w) &= \sum_{n=1}^{N} \Bigl[-y_n \log\!\bigl(\sigma(w^\top x_n)\bigr) - (1 - y_n)\log\!\bigl(1 - \sigma(w^\top x_n)\bigr)\Bigr],\\
+\sigma(a) &= \frac{1}{1 + \exp(-a)}, \qquad D = \{x_n, y_n\}.
+\end{align}
+
+For this problem, you will compute the gradient $\frac{\partial L(D;w)}{\partial w}$ and the Hessian
+$\frac{\partial^2 L(D;w)}{\partial w_i \partial w_j}$ for the model weights. You can use the autograd tool in this problem.
+
+Then, using the gradients and Hessian computed above, write a Python program to fit the Logistic Regression model on the Breast Cancer dataset using:
+\begin{enumerate}
+  \item Gradient descent
+  \item Newton's method with exact expression for the Hessian
+  \item Newton's method with diagonal approximation for the Hessian
+\end{enumerate}
+
+Plot and compare the loss, accuracy, and runtime graphs on the test set (learning rate $= 0.1$, test size $= 30\%$) for all three methods. Briefly comment on the performance of the three methods.
+
+\end{document}

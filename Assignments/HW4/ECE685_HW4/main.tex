@@ -1,0 +1,176 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{booktabs}
+\usepackage{dsfont}
+\usepackage{enumitem}
+\usepackage{extarrows}
+\usepackage{float} 
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{inconsolata}
+\usepackage{listings}
+\usepackage{makecell}
+\usepackage{mathrsfs}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{setspace}
+\usepackage{subfigure} 
+\usepackage{threeparttable}
+\usepackage{ulem}
+\usepackage[many]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\setitemize[1]{itemsep=1pt,partopsep=0.8pt,parsep=\parskip,topsep=0.8pt}
+\DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
+%% Number of equations.
+\numberwithin{equation}{section}
+%% New symbols.
+\newcommand{\rmb}{\mathrm{b}}
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\ind}{\perp\!\!\!\perp}
+\newcommand{\bfw}{\mathbf{w}}
+\newcommand{\bbC}{\mathbb{C}}
+\newcommand{\bbN}{\mathbb{N}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\bbP}{\mathbb{P}}
+\newcommand{\bbQ}{\mathbb{Q}}
+\newcommand{\bbR}{\mathbb{R}}
+\newcommand{\bbT}{\mathbb{T}}
+\newcommand{\bbZ}{\mathbb{Z}}
+\newcommand{\scr}{\mathscr}
+\renewcommand{\cal}{\mathcal}
+\newcommand{\loc}{\mathrm{loc}}
+\newcommand{\ol}{\overline}
+\newcommand{\wh}{\widehat}
+\newcommand{\wt}{\widetilde}
+\DeclareFontFamily{U}{mathx}{}
+\DeclareFontShape{U}{mathx}{m}{n}{<-> mathx10}{}
+\DeclareSymbolFont{mathx}{U}{mathx}{m}{n}
+\DeclareMathAccent{\widecheck}{0}{mathx}{"71}
+\DeclareMathOperator{\id}{Id}
+\DeclareMathOperator{\gr}{Gr}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\Le}{Le}
+\DeclareMathOperator{\cov}{Cov}
+\DeclareMathOperator{\var}{Var}
+\DeclareMathOperator{\conv}{Conv}
+\DeclareMathOperator{\supp}{supp}
+\DeclareMathOperator{\diam}{diam}
+\DeclareMathOperator{\esssup}{ess\,sup}
+\DeclareMathOperator{\argmax}{argmax}
+\DeclareMathOperator{\argmin}{argmin}
+\DeclareMathOperator{\re}{Re}
+\DeclareMathOperator{\im}{Im}
+
+\def\avint{\mathop{\,\rlap{\;--}\!\int}\nolimits}
+\renewcommand{\d}{\mathrm{d}}
+\renewcommand{\Re}{\mathrm{Re}}
+\renewcommand{\Im}{\mathrm{Im}}
+\renewcommand{\i}{\mathrm{i}}
+\renewcommand{\proofname}{\textit{Proof}}
+\renewcommand*{\thesubfigure}{(\arabic{subfigure})}
+\renewcommand{\baselinestretch}{1.20}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem*{remark}{\it Remark}
+\title{\bf ECE 685D HW4}
+\usepackage{geometry}
+\geometry{a4paper, scale=0.80}
+\date{}
+\begin{document}
+\maketitle
+\section*{Submission Instructions:}
+\begin{itemize}
+\item[1.] Upload your Jupyter Notebook (.ipynb file).
+\item[2.] Export all outputs and necessary derivations as a PDF or HTML (preferred) and upload them.
+\end{itemize}
+\subsection*{LLM policy:}
+The use of large language models (LLMs) is allowed for this assignment, but if you use them, you {\bf must disclose how.}
+
+\section{Problem 1: Sparse Encoding for Denoising (25 pts)}
+Consider an auto-encoding like this:
+\begin{equation*}
+\min_{D}\frac{1}{T}\sum_{t=1}^T\min_{h^{(t)}}\frac{1}{2}\Vert x^{(t)}-Dh^{(t)}\Vert_2^2+\lambda\Vert h^{(t)}\Vert_1.
+\end{equation*}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figs/sparsecoding.png}
+    \caption{Over-complete auto-encoder with non-linear encoding and linear decoding modules. LASSO ($L_1$) regularization is used to enforce meaningful feature learning.}
+    \label{fig:sparsecoding}
+\end{figure}
+We will use MNIST dataset. Let the dimension of $h$ be $1.5$ times that of your input and $f(x)$ defined by your own conjecture. Let X be a batch sampled from MNIST, taking $X + \mathcal{N}(0,\sigma^2 I)$ ($\sigma^2$ of your
+choice, and you can clip the pixrls of noisy images between $0$ and $1$ to stabilize training) as the model input, and our goal is to obtain its output $\wh X\approx X$. Use the default training split for your auto-encoder. You should plot
+\begin{itemize}
+    \item[(a)] $5$ input-output pairs $(X+\mathcal{N}(0,\sigma^2I),\wh X)$ using the data in the test set.
+    \item[(b)] The top $5$ dictionary vectors in $D$ whose corresponding intensity $\vert h_i\vert$ are the largest.
+    \item[(c)] Plot the mean square error (MSE) between noiseless image $X$ and predicted image $\wh{X}$ as a function of the noise level $\sigma^2$. You can do this for about 5 values of $\sigma^2$ between 0 and 1.
+\end{itemize}
+Hint: Using MLP for this may make the visualization easier. 
+
+
+\section{Problem 2: Probabilistic PCA (35pts)}
+Let $x_1,\cdots,x_N\in\bbR^d$ be $N$ independent observations from
+$$x_j=\underbrace{Wz_j+\mu}_{\text{signal}}+\underset{\text{noise}}{\epsilon_j},\quad \text{where}\ \begin{bmatrix}
+    z_j\\ \epsilon_j
+\end{bmatrix}\overset{\text{i.i.d.}}{\sim}\mathcal{N}\left(0,\begin{bmatrix}
+    I_q & 0 \\ 0 &\sigma^2I_d
+\end{bmatrix}\right).$$
+That is, $(z_j)$ are from the Gaussian distribution $\mathcal{N}(\mu,C)$, where the covariance matrix is $C=WW^\top+\sigma^2 I_d$. We target to estimate the parameters 
+$$\mu\in\bbR^d,\quad W\in\bbR^{d\times q},\quad\text{and}\quad\sigma\in(0,\infty)$$
+by maximum likelihood estimation (MLE). Here the dimension $q<\min\{d,N\}$ is known.
+\begin{itemize}
+    \item[(a)] (5pts) Write the likelihood function $\mathcal{L}(\mu,W,\sigma^2)$ given $x_1,\cdots,x_N$, and derive the MLE $\wh\mu$ of $\mu$.
+    \item[(b)] (10pts) Define the sample covariance matrix of $x_1,\cdots,x_N$ as
+    \begin{equation*}
+        S=\frac{1}{N}\sum_{i=1}^N(x_i-\ol{x})(x_i-\ol{x})^\top,
+    \end{equation*}
+    where $\ol{x}=N^{-1}\sum_{i=1}^N x_i\in\bbR^d$ is the mean of $x_1,\cdots,x_N$. Prove that $\mathcal{L}(\mu,W,\sigma^2)$ is minimized only if 
+    $$C^{-1}W=C^{-1}SC^{-1}W.$$
+    \begin{remark}
+    You may use the following fact: for any positive definite matrices $A,X\in\bbR^{d\times d}$,
+    \begin{equation*}
+        \frac{\d}{\d X}\log\det(X)=X^{-1},\quad\text{and}\quad\frac{\d}{\d X}\mathrm{Tr}(AX^{-1})=-X^{-1}AX^{-1}.
+    \end{equation*}
+    \end{remark}
+    \item[(c)] (10pts) Assume $W$ is a minimizer, and $W=QDV^\top$ the compact SVD of $W$, i.e. $Q\in\bbR^{d\times q},V\in\bbR^{q\times q}$ are two column orthogonal matrices, and $D\in\bbR^{q\times q}$ is a nonnegative diagonal matrix. Show that
+    $$SQ=Q(D^2+\sigma^2 I_d).$$
+    Using this formula to argue that all potential minimizer $W$ has the form of
+    \begin{equation*}
+    W=U_q\left(\Lambda_q-\sigma^2 I_d\right)^{1/2}R,
+    \end{equation*}
+    where the columns of $U_q$ are $q$ distinct eigenvectors of $S$, $\Lambda$ is a diagonal matrix with corresponding eigenvalues and $R\in\bbR^{q\times q}$ is any orthogonal matrix.
+    \item[(d)] (10pts) Show that the MLE of $\sigma^2$ is given by
+    \begin{equation}
+        \wh\sigma^2=\frac{1}{d-q}\sum_{j=q+1}^d\lambda_j(S),
+    \end{equation}
+    where $\lambda_1(S)\geq\lambda_2(S)\geq\cdots\geq\lambda_d(S)$ are eigenvalues of $S$, including repetitions according to algebraic multiplicity and sorted in decreasing order. Derive the MLE $\wh W$ of $W$ using (c).
+\end{itemize}
+
+
+\newpage
+\section{Problem 3: Gaussian-Bernoulli Restricted Boltzmann Machines (40pts)}
+Let the energy function of Gaussian-Bernoulli RBM take the form
+\begin{equation*}
+    E(v,h)=-\left(\sum_{i,j}W_{ij}h_j\frac{v_i}{\sigma_i}-\sum_i\frac{(v_i-b_i)^2}{2\sigma_i^2}+\sum_j\alpha_j h_j\right).
+\end{equation*}
+\begin{itemize}
+    \item[(a)] Use the definition $p(v,h)=e^{-E(x,h)}/Z$ to derive $p(v_i=x|h)$ and $p(h_j=1|v)$. You may leave $p(v_i = x|h)$ in an integral form once you cancel the terms involving $\sum_j a_jh_j$.
+    \item[(b)] Train a Gaussian-Bernouilli RBM over the Fashion MNIST dataset using contrastive divergence minimization (see the lecture notes). Use the standard training and testing split available in Pytorch. Use learning rate $0.001$ and batch size $128$. Train the model over 25 epochs for $M = \{10, 50, 100, 250\}$, where $M$ is the dimension of the hidden weights $W$ and report the mean squared reconstruction error for the test dataset. A template container Bernoulli-Bernoulli has been provided to you. You may use it as a start.
+\end{itemize}
+\end{document}
